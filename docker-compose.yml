@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:14
+    container_name: db-orderservice
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: nimda
+      POSTGRES_DB: ecommerce
+    ports:
+      - "5435:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: redis-orderservice
+    command: ["redis-server", "--notify-keyspace-events", "Ex"]
+    ports:
+      - "6339:6379"
+
+  app:
+    build: .
+    command: ["./order-service-sample", "app"]
+    container_name: app-orderservice
+    environment:
+      DATABASE_DSN: postgres://admin:nimda@db:5432/ecommerce?sslmode=disable
+      REDIS_ADDR: redis:6379
+      JWT_SECRET: my_super_secret_key
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8085:8080"
+    restart: always
+
+  worker:
+    build: .
+    command: ["./order-service-sample", "worker"]
+    container_name: worker-orderservice
+    environment:
+      DATABASE_DSN: postgres://admin:nimda@db:5432/ecommerce?sslmode=disable
+      REDIS_ADDR: redis:6379
+      JWT_SECRET: my_super_secret_key
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  all:
+    build: .
+    command: ["./order-service-sample", "all"]
+    container_name: app-orderservice
+    environment:
+      DATABASE_DSN: postgres://admin:nimda@db:5432/ecommerce?sslmode=disable
+      REDIS_ADDR: redis:6379
+      JWT_SECRET: my_super_secret_key
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8085:8080"
+    restart: always
+
+volumes:
+  db_data:
